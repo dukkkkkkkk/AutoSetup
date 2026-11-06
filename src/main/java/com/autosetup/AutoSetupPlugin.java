@@ -19,7 +19,7 @@ import static com.zenith.Globals.PLUGIN_MANAGER;
 @Plugin(
     id = BuildConstants.PLUGIN_ID,
     version = BuildConstants.VERSION,
-    description = "Runs a list of setup commands when ZenithProxy starts, or on demand",
+    description = "Runs the commands in setup.txt when ZenithProxy starts, or on demand",
     url = "https://github.com/dukkkkkkkk/AutoSetup",
     authors = {"dukkkkkkkk"},
     mcVersions = {BuildConstants.MC_VERSION}
@@ -33,6 +33,7 @@ public class AutoSetupPlugin implements ZenithProxyPlugin {
     public static volatile String lastRunReason = "";   // "startup" or "manual"
     public static volatile int lastRunCount = 0;
     public static volatile List<String> lastRunFailed = List.of();
+    public static volatile String lastRunProblem = null; // e.g. "no setup.txt", null if it ran
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
 
     @Override
@@ -41,6 +42,9 @@ public class AutoSetupPlugin implements ZenithProxyPlugin {
         CONFIG = pluginAPI.registerConfig(BuildConstants.PLUGIN_ID, AutoSetupConfig.class);
         pluginAPI.registerCommand(new AutoSetupCommand());
 
+        if (!SetupFile.exists()) {
+            LOG.info("AutoSetup: no setup.txt yet. Put one here: {}", SetupFile.location());
+        }
         if (CONFIG.runOnStartup) {
             // ZenithProxy refuses to run commands until every plugin has finished loading,
             // so wait on a background thread instead of running them right here.
@@ -54,7 +58,7 @@ public class AutoSetupPlugin implements ZenithProxyPlugin {
         return RUNNING.get();
     }
 
-    /** Runs the list in the background. Returns false if a run is already going. */
+    /** Runs setup.txt in the background. Returns false if a run is already going. */
     public static boolean runLater(String reason) {
         if (isRunning()) return false;
         startThread(() -> {
@@ -89,32 +93,46 @@ public class AutoSetupPlugin implements ZenithProxyPlugin {
     private static void runAll(String reason) {
         if (!RUNNING.compareAndSet(false, true)) return;
         try {
-            List<String> commands = List.copyOf(CONFIG.commands);
+            lastRunReason = reason;
+            if (!SetupFile.exists()) {
+                finish("no setup.txt", 0, List.of());
+                LOG.info("AutoSetup: nothing to do, no setup.txt at {}", SetupFile.location());
+                return;
+            }
+            List<String> commands = SetupFile.readCommands();
+            if (commands.isEmpty()) {
+                finish("setup.txt is empty", 0, List.of());
+                LOG.info("AutoSetup: nothing to do, setup.txt has no commands");
+                return;
+            }
             List<String> failed = new ArrayList<>();
-            LOG.info("AutoSetup: applying {} commands ({})...", commands.size(), reason);
-            for (String raw : commands) {
-                String cmd = clean(raw);
-                if (cmd.isEmpty()) continue;
+            LOG.info("AutoSetup: applying {} commands from setup.txt ({})...", commands.size(), reason);
+            for (String cmd : commands) {
                 if (isSelf(cmd)) {
                     LOG.warn("AutoSetup: skipped '{}' (it would run itself)", cmd);
                     continue;
                 }
                 if (!runCommand(cmd)) failed.add(cmd);
             }
-            lastRunAt = System.currentTimeMillis();
-            lastRunReason = reason;
-            lastRunCount = commands.size();
-            lastRunFailed = List.copyOf(failed);
+            finish(null, commands.size(), failed);
             if (failed.isEmpty()) {
                 LOG.info("AutoSetup: done! All {} commands ran", commands.size());
             } else {
                 LOG.warn("AutoSetup: done, but {} didn't work: {}", failed.size(), failed);
             }
         } catch (Throwable t) {
+            finish("couldn't read setup.txt: " + t.getMessage(), 0, List.of());
             LOG.error("AutoSetup failed", t);
         } finally {
             RUNNING.set(false);
         }
+    }
+
+    private static void finish(String problem, int count, List<String> failed) {
+        lastRunAt = System.currentTimeMillis();
+        lastRunProblem = problem;
+        lastRunCount = count;
+        lastRunFailed = List.copyOf(failed);
     }
 
     /** Returns false if ZenithProxy didn't recognise the command (typo, wrong args, etc). */

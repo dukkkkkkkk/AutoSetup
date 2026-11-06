@@ -47,5 +47,5 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ env.PLUGIN_VERSION }}
-          artifacts: build/libs/*.jar
+          artifacts: build/libs/*.jar,example/setup.txt
           generateReleaseNotes: true
