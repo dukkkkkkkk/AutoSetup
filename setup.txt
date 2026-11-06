@@ -1,0 +1,29 @@
+#this is what i currently run.
+
+.b allowbreak off
+.b allowplace off
+.antiafk walk off
+.serverconnection ping off
+.chatrelay publicchat off
+.antiafk walk off
+.autodisconnect on
+.autodisconnect totempop on
+.autoDisconnect totemPop minTotemsRemaining 1
+.autototem popalert on
+.autototem popalert mention on
+.autototem nototemsalert mention on
+.chatrelay deathmessages off
+.alerts death mention on
+.visualrange replayrecording on
+.replay discordupload on
+.replay autorecord mode health
+.replay autorecord health 10
+.ka on
+.chatrelay whispermentions off
+.chatrelay namementions off
+.alerts disconnect mention off
+.visualrange on
+.chatrelay servermessages off
+.autoeat hunger 8
+.autoeat health 14
+.antiafk rotate of
