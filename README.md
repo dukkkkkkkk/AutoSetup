@@ -24,7 +24,7 @@ One command per line, written the same way you would in Discord. The leading `.`
 .ka on
 ```
 
-There's a full example in [`example/setup.txt`](example/setup.txt), also attached to each release.
+There's a full example in [`setup.txt`].
 
 The file is read fresh every run, so after uploading a new one just use `autoSetup run`, no restart needed.
 
