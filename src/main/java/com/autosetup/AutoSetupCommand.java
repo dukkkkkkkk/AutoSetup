@@ -27,10 +27,14 @@ public class AutoSetupCommand extends Command {
             .description("""
                 Runs the commands in setup.txt (in the ZenithProxy folder).
                 One command per line, written like in Discord, the leading . is optional.
+                Upload a new setup.txt by attaching it to `autoSetup upload` in Discord.
+                Account owner only.
                 """)
             .usageLines(
                 "run",
                 "status",
+                "upload (attach setup.txt)",
+                "download",
                 "list",
                 "add <command>",
                 "insert <number> <command>",
@@ -43,7 +47,11 @@ public class AutoSetupCommand extends Command {
 
     @Override
     public LiteralArgumentBuilder<CommandContext> register() {
+        // Commands in setup.txt run with full terminal permissions, so only the
+        // account owner may touch AutoSetup. Otherwise anyone could upload a file
+        // containing owner-only commands and have them run.
         return command("autoSetup")
+            .requires(Command::validateAccountOwner)
             .executes(c -> {
                 c.getSource().getEmbed()
                     .title("AutoSetup")
@@ -75,6 +83,12 @@ public class AutoSetupCommand extends Command {
                         .description("Check `autoSetup status` in a few seconds to see if they all worked")
                         .successColor();
                 }
+            }))
+            .then(literal("upload").executes(c -> {
+                DiscordFiles.upload(c.getSource());
+            }))
+            .then(literal("download").executes(c -> {
+                DiscordFiles.download(c.getSource());
             }))
             .then(literal("status").executes(c -> {
                 c.getSource().getEmbed()
@@ -178,8 +192,8 @@ public class AutoSetupCommand extends Command {
 
     private static void noFile(Embed embed) {
         embed.title("No setup.txt")
-            .description("Upload a setup.txt with one command per line to:\n`" + SetupFile.location() + "`"
-                + "\nor start one with `autoSetup add <command>`")
+            .description("Send `.autoSetup upload` in Discord with your setup.txt attached, or put it here:\n`"
+                + SetupFile.location() + "`\nYou can also start one with `autoSetup add <command>`")
             .errorColor();
     }
 
@@ -203,7 +217,7 @@ public class AutoSetupCommand extends Command {
         if (AutoSetupPlugin.isRunning()) return "Running right now...";
         String fileLine = SetupFile.exists()
             ? "setup.txt: found\n"
-            : "setup.txt: **missing**. Upload one to `" + SetupFile.location() + "`\n";
+            : "setup.txt: **missing**. Attach one to `.autoSetup upload` in Discord\n";
         if (AutoSetupPlugin.lastRunAt == 0) {
             return fileLine + (CONFIG.runOnStartup
                 ? "Hasn't run yet. It runs a few seconds after ZenithProxy starts, or use `autoSetup run`"

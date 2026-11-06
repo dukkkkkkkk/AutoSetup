@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,23 @@ public final class SetupFile {
     /** Full path, for showing the user where the file should go. */
     public static String location() {
         return PATH.toAbsolutePath().normalize().toString();
+    }
+
+    public static final Path BACKUP = Path.of("setup.txt.bak");
+
+    /**
+     * Replaces setup.txt with new text, keeping the old one as setup.txt.bak.
+     * Returns the commands in the new file.
+     */
+    public static List<String> replace(String text) throws IOException {
+        if (exists()) {
+            Files.copy(PATH, BACKUP, StandardCopyOption.REPLACE_EXISTING);
+        }
+        // write to a temp file first so a crash can't leave a half-written setup.txt
+        Path temp = Path.of("setup.txt.tmp");
+        Files.writeString(temp, text, StandardCharsets.UTF_8);
+        Files.move(temp, PATH, StandardCopyOption.REPLACE_EXISTING);
+        return readCommands();
     }
 
     /** The commands in the file, cleaned up. Empty if the file is missing. */

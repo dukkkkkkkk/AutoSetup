@@ -6,8 +6,10 @@ A [ZenithProxy](https://github.com/rfresh2/ZenithProxy) plugin that runs the com
 
 1. Download the jar from the latest [release](https://github.com/dukkkkkkkk/AutoSetup/releases).
 2. Put it in the `plugins` folder next to the ZenithProxy launcher.
-3. Upload a `setup.txt` to the ZenithProxy folder (next to the launcher, **not** inside `plugins`).
-4. Restart ZenithProxy. Plugins need the `java` release channel.
+3. Restart ZenithProxy. Plugins need the `java` release channel.
+4. In your Zenith Discord channel, send `.autoSetup upload` with your `setup.txt` attached to the same message, then `.autoSetup run`.
+
+You can also put `setup.txt` in the ZenithProxy folder by hand (next to the launcher, **not** inside `plugins`).
 
 The plugin has no commands built in. Without a `setup.txt` it does nothing.
 
@@ -28,10 +30,12 @@ The file is read fresh every run, so after uploading a new one just use `autoSet
 
 ## Commands
 
-Use them from Discord (`.autoSetup ...`), the terminal, or in-game.
+Use them from Discord (`.autoSetup ...`), the terminal, or in-game. **Account owner only**, because the commands in setup.txt run with full console permissions.
 
 | Command | What it does |
 | --- | --- |
+| `autoSetup upload` | Replaces setup.txt with the `.txt` attached to the message (Discord only). The old one is kept as `setup.txt.bak` |
+| `autoSetup download` | The bot sends your current setup.txt back (Discord only) |
 | `autoSetup` / `autoSetup status` | Shows whether setup.txt is there, when it last ran, and any command that wasn't recognised |
 | `autoSetup run` | Runs setup.txt now |
 | `autoSetup list` | Shows the commands in setup.txt, numbered |
